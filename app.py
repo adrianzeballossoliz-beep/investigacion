@@ -60,3 +60,14 @@ print(f"  Conocimiento ML alto (Excelente/Importante):  {alto_ml} ({round(alto_m
 print(f"  Usan métodos tradicionales (Sí):              {usa_trad} ({round(usa_trad/len(df)*100)}%)")
 print(f"  Infraestructura nivel Alto:                   {infra_al} ({round(infra_al/len(df)*100)}%)")
 print("=" * 60)
+
+from flask import Flask, send_file
+
+app = Flask(__name__)
+
+@app.route("/")
+def index():
+    return send_file("dashboard.html")
+
+if __name__ == "__main__":
+    app.run(debug=False)
