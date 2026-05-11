@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard — ML en Ciberseguridad</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <style>
+    /* ══════════════════════════════════════════
+       BASE
+    ══════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #eef1f8;
+      color: #1a1d2e;
+      font-size: 14px;
+    }
+
+    /* ══════════════════════════════════════════
+       HEADER
+    ══════════════════════════════════════════ */
+    header {
+      background: #1e3a5f;
+      color: #fff;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .logo {
+      background: #2563eb;
+      border-radius: 10px;
+      width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+    header h1 { font-size: 17px; font-weight: 600; }
+    header p  { font-size: 12px; color: #94afc8; margin-top: 3px; }
+
+    /* ══════════════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════════════ */
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 28px 24px 60px;
+    }
+
+    .sec-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin: 28px 0 12px;
+    }
+
+    /* ══════════════════════════════════════════
+       KPI CARDS
+    ══════════════════════════════════════════ */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .kpi {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px;
+      border-left: 4px solid #2563eb;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      margin-bottom: 8px;
+    }
+    .kpi-val {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1e3a5f;
+      line-height: 1;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 5px;
+    }
+
+    /* ══════════════════════════════════════════
+       GRID DE CARDS
+    ══════════════════════════════════════════ */
+    .grid2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 18px;
+    }
+    .grid1 { display: grid; grid-template-columns: 1fr; gap: 18px; }
+
+    /* ══════════════════════════════════════════
+       CARD
+    ══════════════════════════════════════════ */
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px 22px 22px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #1a1d2e;
+      margin-bottom: 3px;
+    }
+    .card-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-bottom: 14px;
+    }
+
+    /* Canvas wrappers — altura explícita obligatoria para Chart.js */
+    .h160 { position: relative; height: 160px; }
+    .h200 { position: relative; height: 200px; }
+    .h240 { position: relative; height: 240px; }
+    .h300 { position: relative; height: 300px; }
+
+    /* ══════════════════════════════════════════
+       LEYENDA PERSONALIZADA
+    ══════════════════════════════════════════ */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+      margin-bottom: 10px;
+    }
+    .legend span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: #6b7280;
+    }
+    .leg-box {
+      width: 10px; height: 10px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════════════════
+       TABLA RESUMEN
+    ══════════════════════════════════════════ */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th {
+      text-align: left;
+      padding: 9px 12px;
+      background: #eef1f8;
+      color: #6b7280;
+      font-weight: 700;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #f1f5f9;
+      color: #1a1d2e;
+    }
+    tr:last-child td { border-bottom: none; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 600;
+      background: #eff6ff;
+      color: #2563eb;
+    }
+
+    /* ══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════ */
+    footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 11px;
+      color: #94a3b8;
+      border-top: 1px solid #e2e8f0;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════════════════════ HEADER ════════════════════════════ -->
+<header>
+  <div class="logo">🛡️</div>
+  <div>
+    <h1>ML en Ciberseguridad — Telecomunicaciones</h1>
+    <p>Dashboard de resultados · Encuesta de investigación · 50 encuestados · Cochabamba, Bolivia</p>
+  </div>
+</header>
+
+<!-- ════════════════════════════ MAIN ══════════════════════════════ -->
+<main>
+
+  <!-- KPIs -->
+  <p class="sec-label">Indicadores clave</p>
+  <div class="kpi-row">
+    <div class="kpi">
+      <p class="kpi-label">Total encuestados</p>
+      <p class="kpi-val">50</p>
+      <p class="kpi-sub">respuestas válidas</p>
+    </div>
+    <div class="kpi">
+      <p class="kpi-label">Conocimiento ML alto</p>
+      <p class="kpi-val">20%</p>
+      <p class="kpi-sub">Excelente / Importante / Muy importante</p>
+    </div>
+    <div class="kpi">
+      <p class="kpi-label">Usan métodos tradicionales</p>
+      <p class="kpi-val">46%</p>
+      <p class="kpi-sub">respondieron Sí</p>
+    </div>
+    <div class="kpi">
+      <p class="kpi-label">Infraestructura nivel Alto</p>
+      <p class="kpi-val">26%</p>
+      <p class="kpi-sub">de los encuestados</p>
+    </div>
+  </div>
+
+  <!-- Fila 1 -->
+  <p class="sec-label">Conocimiento y capacidad técnica</p>
+  <div class="grid2">
+
+    <div class="card">
+      <p class="card-title">Conocimiento sobre Machine Learning</p>
+      <p class="card-sub">Escala cualitativa · 50 respuestas</p>
+      <div class="legend" id="l1"></div>
+      <div class="h200"><canvas id="c1" role="img" aria-label="Conocimiento sobre ML"></canvas></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Nivel de infraestructura para seguridad + ML</p>
+      <p class="card-sub">Bajo / Medio / Alto · 50 respuestas</p>
+      <div class="legend" id="l2"></div>
+      <div class="h200"><canvas id="c2" role="img" aria-label="Nivel de infraestructura"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Fila 2 -->
+  <p class="sec-label">Seguridad tradicional y adopción de ML</p>
+  <div class="grid2">
+
+    <div class="card">
+      <p class="card-title">¿Usa métodos de seguridad tradicionales?</p>
+      <p class="card-sub">Sí / No · 50 respuestas</p>
+      <div class="legend" id="l3"></div>
+      <div class="h160"><canvas id="c3" role="img" aria-label="Uso de métodos tradicionales"></canvas></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Principal beneficio del ML en detección de amenazas</p>
+      <p class="card-sub">Sí adopta / No adopta · 50 respuestas</p>
+      <div class="legend" id="l4"></div>
+      <div class="h160"><canvas id="c4" role="img" aria-label="Beneficio principal del ML"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Fila 3 -->
+  <p class="sec-label">Evaluación de métodos y detección</p>
+  <div class="grid2">
+
+    <div class="card">
+      <p class="card-title">Efectividad métodos tradicionales vs ataques sofisticados</p>
+      <p class="card-sub">Escala 1 (Muy Poco) → 5 (Muy alta)</p>
+      <div class="legend" id="l5"></div>
+      <div class="h240"><canvas id="c5" role="img" aria-label="Efectividad métodos tradicionales"></canvas></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Importancia de la detección en tiempo real</p>
+      <p class="card-sub">Escala 1 (Poco) → 5 (Mucho)</p>
+      <div class="legend" id="l6"></div>
+      <div class="h240"><canvas id="c6" role="img" aria-label="Importancia detección tiempo real"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Fila 4 -->
+  <p class="sec-label">Impacto del ML y desafíos de adopción</p>
+  <div class="grid2">
+
+    <div class="card">
+      <p class="card-title">ML mejora predicción ante ataques SQL/XSS</p>
+      <p class="card-sub">Escala Likert · 50 respuestas</p>
+      <div class="legend" id="l7"></div>
+      <div class="h240"><canvas id="c7" role="img" aria-label="Mejora predictiva ML vs SQL/XSS"></canvas></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Desafío principal para adoptar ML</p>
+      <p class="card-sub">50 respuestas</p>
+      <div class="legend" id="l8"></div>
+      <div class="h240"><canvas id="c8" role="img" aria-label="Desafíos de adopción ML"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Fila 5 -->
+  <p class="sec-label">Arquitectura y factor de migración</p>
+  <div class="grid2">
+
+    <div class="card">
+      <p class="card-title">Arquitectura ML más efectiva para tráfico web</p>
+      <p class="card-sub">50 respuestas</p>
+      <div class="legend" id="l9"></div>
+      <div class="h200"><canvas id="c9" role="img" aria-label="Arquitectura ML más efectiva"></canvas></div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Factor determinante para migrar a seguridad proactiva con IA</p>
+      <p class="card-sub">50 respuestas</p>
+      <div class="legend" id="l10"></div>
+      <div class="h200"><canvas id="c10" role="img" aria-label="Factor de migración a IA"></canvas></div>
+    </div>
+
+  </div>
+
+  <!-- Fila 6 — full width -->
+  <p class="sec-label">Frecuencia de actualización de protocolos</p>
+  <div class="grid1">
+    <div class="card">
+      <p class="card-title">Frecuencia de actualización de protocolos de seguridad web</p>
+      <p class="card-sub">50 respuestas</p>
+      <div class="legend" id="l11"></div>
+      <div class="h160"><canvas id="c11" role="img" aria-label="Frecuencia actualización protocolos"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Tabla resumen -->
+  <p class="sec-label">Resumen por pregunta</p>
+  <div class="card">
+    <table>
+      <thead>
+        <tr>
+          <th>Pregunta</th>
+          <th>Respuesta más frecuente</th>
+          <th>N</th>
+          <th>%</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Conocimiento sobre Machine Learning</td><td><span class="badge">Mala</span></td><td>10</td><td>20%</td></tr>
+        <tr><td>Nivel de infraestructura para ML en seguridad</td><td><span class="badge">Medio</span></td><td>21</td><td>42%</td></tr>
+        <tr><td>¿Usa métodos de seguridad tradicionales?</td><td><span class="badge">No</span></td><td>27</td><td>54%</td></tr>
+        <tr><td>Beneficio principal del ML en detección</td><td><span class="badge">Sí / No (empate)</span></td><td>25</td><td>50%</td></tr>
+        <tr><td>Efectividad métodos tradicionales</td><td><span class="badge">Regular</span></td><td>9</td><td>18%</td></tr>
+        <tr><td>Importancia detección en tiempo real</td><td><span class="badge">Mala</span></td><td>10</td><td>20%</td></tr>
+        <tr><td>ML mejora predicción ante SQL/XSS</td><td><span class="badge">No</span></td><td>10</td><td>20%</td></tr>
+        <tr><td>Desafío principal para adoptar ML</td><td><span class="badge">Poco importante</span></td><td>9</td><td>18%</td></tr>
+        <tr><td>Arquitectura ML más efectiva</td><td><span class="badge">Tal vez</span></td><td>9</td><td>18%</td></tr>
+        <tr><td>Factor para migrar a seguridad proactiva</td><td><span class="badge">Mala</span></td><td>8</td><td>16%</td></tr>
+        <tr><td>Frecuencia actualización de protocolos</td><td><span class="badge">No</span></td><td>10</td><td>20%</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</main>
+
+<footer>
+  Dashboard generado con HTML · CSS · Chart.js &nbsp;|&nbsp; Datos procesados con Python (pandas) &nbsp;|&nbsp; Encuesta ML en Ciberseguridad
+</footer>
+
+<!-- ════════════════════════════ JAVASCRIPT ════════════════════════ -->
+<script>
+/* Paleta de colores */
+const P = [
+  '#2563eb','#16a34a','#dc2626','#d97706','#7c3aed',
+  '#0891b2','#be185d','#065f46','#b45309','#1e3a5f','#475569'
+];
+
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+Chart.defaults.font.size   = 12;
+Chart.defaults.color       = '#6b7280';
+
+/* ── Genera leyenda HTML ───────────────────────────────────── */
+function leyenda(id, labels, colors) {
+  document.getElementById(id).innerHTML = labels.map((l, i) =>
+    `<span><span class="leg-box" style="background:${colors[i % colors.length]}"></span>${l}</span>`
+  ).join('');
+}
+
+/* ── Opciones comunes ─────────────────────────────────────── */
+const baseBar = (max) => ({
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { display: false } },
+    y: { beginAtZero: true, max, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } }
+  }
+});
+
+const baseBarH = (max) => ({
+  indexAxis: 'y',
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { beginAtZero: true, max, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
+    y: { grid: { display: false } }
+  }
+});
+
+const basePie = (tipo) => ({
+  type: tipo,
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } }
+});
+
+/* ── Funciones de creación ────────────────────────────────── */
+function barras(id, lid, datos, max) {
+  const k = Object.keys(datos), v = Object.values(datos);
+  const c = k.map((_, i) => P[i % P.length]);
+  leyenda(lid, k, c);
+  new Chart(id, { type: 'bar',
+    data: { labels: k, datasets: [{ data: v, backgroundColor: c, borderRadius: 5, borderSkipped: false }] },
+    options: baseBar(max)
+  });
+}
+
+function barrasH(id, lid, datos, max) {
+  const k = Object.keys(datos), v = Object.values(datos);
+  const c = k.map((_, i) => P[i % P.length]);
+  leyenda(lid, k, c);
+  new Chart(id, { type: 'bar',
+    data: { labels: k, datasets: [{ data: v, backgroundColor: c, borderRadius: 4, borderSkipped: false }] },
+    options: baseBarH(max)
+  });
+}
+
+function pie(id, lid, datos, tipo) {
+  const k = Object.keys(datos), v = Object.values(datos);
+  const c = k.map((_, i) => P[i % P.length]);
+  leyenda(lid, k, c);
+  const cfg = basePie(tipo);
+  cfg.data = { labels: k, datasets: [{ data: v, backgroundColor: c, borderWidth: 2, borderColor: '#fff' }] };
+  new Chart(id, cfg);
+}
+
+/* ══════════════════════════════════════════════════════════
+   DATOS (generados por procesar_datos.py)
+   ══════════════════════════════════════════════════════════ */
+
+const conocimiento_ml = {
+  "Mala": 10, "No": 8, "Poco importante": 7,
+  "Buena": 5, "Regular": 5, "Excelente": 5,
+  "Sí": 5, "Importante": 4, "Muy importante": 1
+};
+
+const nivel_seg_ml = { "Medio": 21, "Bajo": 16, "Alto": 13 };
+
+const metodos_trad = { "No": 27, "Sí": 23 };
+
+const beneficio_ml = { "Sí": 25, "No": 25 };
+
+const ef_trad = {
+  "Regular": 9, "Muy importante": 6, "Tal vez": 6,
+  "Importante": 6, "No": 5, "Sí": 5,
+  "Excelente": 4, "Poco importante": 4, "Buena": 3, "Mala": 2
+};
+
+const det_real = {
+  "Mala": 10, "Regular": 7, "Importante": 6,
+  "Sí": 6, "Tal vez": 6, "Muy importante": 4,
+  "No": 4, "Buena": 3, "Excelente": 3, "Poco importante": 1
+};
+
+const mejora_pred = {
+  "No": 10, "Poco importante": 7, "Sí": 6,
+  "Regular": 5, "Muy importante": 5, "Importante": 4,
+  "Mala": 4, "Tal vez": 4, "Excelente": 3, "Buena": 2
+};
+
+const desafio_ml = {
+  "Poco importante": 9, "Mala": 6, "Tal vez": 5,
+  "Excelente": 5, "Importante": 5, "Muy importante": 4,
+  "No": 4, "Regular": 4, "Sí": 4, "Buena": 4
+};
+
+const arquitectura_ml = {
+  "Tal vez": 9, "Importante": 7, "Poco importante": 6,
+  "Muy importante": 6, "Mala": 5, "Regular": 5,
+  "Sí": 4, "Excelente": 4, "Buena": 3, "No": 1
+};
+
+const factor_migracion = {
+  "Mala": 8, "Importante": 7, "No": 7,
+  "Sí": 7, "Excelente": 4, "Poco importante": 4,
+  "Buena": 4, "Regular": 3, "Tal vez": 3, "Muy importante": 3
+};
+
+const frec_actualizacion = {
+  "No": 10, "Excelente": 7, "Poco importante": 7,
+  "Buena": 5, "Regular": 5, "Tal vez": 5,
+  "Muy importante": 4, "Mala": 3, "Importante": 2, "Sí": 2
+};
+
+/* ══════════════════════════════════════════════════════════
+   RENDER DE GRÁFICOS
+   ══════════════════════════════════════════════════════════ */
+barras ('c1',  'l1',  conocimiento_ml,   12);
+pie    ('c2',  'l2',  nivel_seg_ml,    'doughnut');
+pie    ('c3',  'l3',  metodos_trad,    'pie');
+pie    ('c4',  'l4',  beneficio_ml,    'pie');
+barrasH('c5',  'l5',  ef_trad,           10);
+barrasH('c6',  'l6',  det_real,          12);
+barrasH('c7',  'l7',  mejora_pred,       12);
+barrasH('c8',  'l8',  desafio_ml,        10);
+barras ('c9',  'l9',  arquitectura_ml,   10);
+barras ('c10', 'l10', factor_migracion,  10);
+barras ('c11', 'l11', frec_actualizacion,12);
+</script>
+</body>
+</html>
